@@ -26,6 +26,9 @@ if ADMIN_ID:
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 WEBHOOK_PATH = "/webhook"
 
+# Determine DB Path (Use /tmp for Vercel/Serverless)
+DB_FILE = "/tmp/orders.db" if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") else "orders.db"
+
 # Setup Logging
 logging.basicConfig(
     level=logging.INFO,

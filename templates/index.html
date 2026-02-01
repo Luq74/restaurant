@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Menu Mercure Nexa</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="errorBox">Mohon isi Nama Pemesan!</div>
+
+    <!-- PAYMENT MODAL -->
+    <div id="paymentModal">
+        <div class="payment-header">
+            <h3>Konfirmasi & Pembayaran</h3>
+        </div>
+        
+        <div class="summary-box">
+            <h4 style="margin-top:0">Rincian Pesanan:</h4>
+            <div id="orderListSummary"></div>
+            
+            <div class="total-pay" id="finalTotalDisplay">Total: Rp 0</div>
+        </div>
+
+        <div class="qris-container">
+                    <p style="font-weight: bold; margin-bottom: 15px;">SCAN QRIS UNTUK BAYAR</p>
+                    <!-- QRIS Image updated with user link -->
+                    <img src="/static/images/qris.jpg" id="qrisImg" class="qris-img" alt="QRIS Payment">
+                    <p style="font-size: 11px; color: #777;">Silakan simpan bukti transfer untuk divalidasi staf kami.</p>
+                </div>
+
+        <button class="confirm-pay-btn" onclick="finalisasiPesanan()">SAYA SUDAH BAYAR ✓</button>
+        <button class="back-btn" onclick="tutupPayment()">KEMBALI KE MENU</button>
+    </div>
+
+    <div id="mainContent">
+        <div class="header">
+            <h1 class="logo-text">Mercure</h1>
+            <div class="hotel-name">Bandung Nexa Supratman</div>
+        </div>
+
+        <div class="customer-section">
+            <div style="margin-bottom: 15px;">
+                <label class="input-label" for="nama">Nama Pemesan</label>
+                <input type="text" id="nama" class="customer-input" placeholder="Nama Anda...">
+            </div>
+            <div>
+                <label class="input-label" for="nomor-meja">Nomor Meja</label>
+                <input type="number" id="nomor-meja" class="customer-input" placeholder="No. Meja (Contoh: 5)">
+            </div>
+        </div>
+
+        <div class="tabs">
+            {% for category in menu.keys() %}
+            <button class="tab-btn {% if loop.first %}active{% endif %}" onclick="filterMenu('{{ category }}', this)">{{ category }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="menu-grid" id="menuContainer">
+            {% for category, items in menu.items() %}
+                {% set outer_loop = loop %}
+                {% for item in items %}
+                <div class="menu-card {% if outer_loop.first %}show{% endif %}" data-category="{{ category }}">
+                    <img src="{{ item.image }}" class="menu-img" alt="{{ item.name }}" onclick="zoomImage(this.src)">
+                    <div class="menu-info">
+                        <p class="menu-title">{{ item.name }}</p>
+                        <p class="menu-price">{{ "{:,.0f}".format(item.price).replace(',', '.') }}</p>
+                        <input type="text" class="note-input" placeholder="Catatan...">
+                        <div class="btn-container">
+                            <button class="add-btn" onclick="tambahItem('{{ item.name }}', {{ item.price }}, this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        <div class="dev-footer">
+            Lucky Digital Menu | Sentra Guest OS @ 2025 SGO V2.1 (Debug Mode)
+        </div>
+
+        <div class="footer-action" id="footerOrder">
+            <button class="order-btn" onclick="bukaPayment()">
+                <span id="totalSummary">0 Item | Rp 0</span>
+                <span><i class="fas fa-shopping-bag"></i> Checkout ❯</span>
+            </button>
+        </div>
+
+        <!-- Call Waiter Button -->
+        <div class="waiter-btn" onclick="panggilWaiter()">
+            <i class="fas fa-bell"></i>
+        </div>
+    </div>
+
+    <!-- IMAGE ZOOM MODAL -->
+    <div id="imageModal" class="image-modal" onclick="closeZoom()">
+        <span class="close-image-modal">&times;</span>
+        <img class="image-modal-content" id="zoomedImage">
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

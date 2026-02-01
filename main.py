@@ -27,6 +27,7 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 WEBHOOK_PATH = "/webhook"
 
 # Determine DB Path (Use /tmp for Vercel/Serverless)
+# Vercel file system is read-only, except for /tmp
 DB_FILE = "/tmp/orders.db" if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") else "orders.db"
 
 # Setup Logging
@@ -42,8 +43,6 @@ logger = logging.getLogger(__name__)
 # Initialize Bot
 if not API_TOKEN:
     logger.error("API_TOKEN is not set in .env file!")
-    # We don't exit here to allow build on Vercel even if env is missing initially
-    # sys.exit(1)
 
 bot = Bot(token=API_TOKEN) if API_TOKEN else None
 dp = Dispatcher()
@@ -73,20 +72,23 @@ MENU = {
 
 # Database Setup (Note: ephemeral on Serverless)
 def init_db():
-    conn = sqlite3.connect('orders.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS orders
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  user_name TEXT, 
-                  order_details TEXT, 
-                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
-    logger.info("Database initialized.")
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS orders
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                      user_name TEXT, 
+                      order_details TEXT, 
+                      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+        conn.commit()
+        conn.close()
+        logger.info(f"Database initialized at {DB_FILE}")
+    except Exception as e:
+        logger.error(f"Failed to init DB: {e}")
 
 def save_order(user_name, order_details):
     try:
-        conn = sqlite3.connect('orders.db')
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute("INSERT INTO orders (user_name, order_details) VALUES (?, ?)", (user_name, order_details))
         conn.commit()
@@ -207,7 +209,6 @@ async def index(request: Request):
 
 @app.post("/submit_order")
 async def submit_order(order: Request):
-    # Using Request to handle generic JSON because structure might be dynamic
     try:
         data = await order.json()
         logger.info(f"Received HTTP order: {data}")
@@ -257,8 +258,11 @@ async def on_startup():
     init_db()
     if bot and BASE_URL:
         webhook_url = f"{BASE_URL}{WEBHOOK_PATH}"
-        await bot.set_webhook(webhook_url)
-        logger.info(f"Webhook set to {webhook_url}")
+        try:
+            await bot.set_webhook(webhook_url)
+            logger.info(f"Webhook set to {webhook_url}")
+        except Exception as e:
+            logger.error(f"Failed to set webhook: {e}")
 
 if __name__ == "__main__":
     import uvicorn
